@@ -529,6 +529,29 @@ def test_MultiDiGraph_EdgeKey():
         G.remove_edges_from([(1, 3)])
 
 
+def test_remove_node():
+    # Initialize the graph
+    G = branchings.MultiDiGraph_EdgeKey()
+    G.add_nodes_from([1, 2, 3])
+    G.add_edges_from([(1, 2, 'a', {}), (2, 3, 'b', {})])
+
+    # Remove node 2
+    G.remove_node(2)
+
+    # Assertions
+    assert 2 not in G  # Node 2 should not be in the graph
+    assert 'a' not in G.edge_index  # Edge key 'a' should not be in edge_index
+    assert 'b' not in G.edge_index  # Edge key 'b' should not be in edge_index
+
+    # Verify other nodes and edges remain unaffected
+    assert 1 in G
+    assert 3 in G
+
+    # Verify edges using G.edges() to get all edges in the graph
+    edges = list(G.edges())
+    assert (1, 2, 'a') not in edges
+    assert (2, 3, 'b') not in edges
+    
 def test_edge_attribute_discard():
     # Test that edge attributes are discarded if we do not specify to keep them
     G = nx.Graph()
