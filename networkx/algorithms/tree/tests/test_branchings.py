@@ -551,7 +551,31 @@ def test_remove_node():
     edges = list(G.edges())
     assert (1, 2, 'a') not in edges
     assert (2, 3, 'b') not in edges
-    
+
+def test_get_path():
+    # Initialize the graph (assuming MultiDiGraph_EdgeKey inherits from MultiDiGraph)
+    G = branchings.MultiDiGraph_EdgeKey()
+    G.add_nodes_from([1, 2, 3, 4, 5])
+    G.add_edges_from([(1, 2, 'a', {}), (2, 3, 'b', {}), (3, 4, 'c', {}), (4, 5, 'd', {})])
+
+    # Get path from node 1 to node 5
+    nodes, edges = branchings.get_path(G, 1, 5)
+
+    # Assertions
+    assert nodes == [1, 2, 3, 4, 5]  # Verify the nodes in the shortest path
+    assert edges == ['a', 'b', 'c', 'd']  # Verify the edge keys in the shortest path
+
+    # Additional assertions to ensure correctness of assumptions
+    assert isinstance(G, nx.MultiDiGraph)  # G should be an instance of MultiDiGraph
+    assert isinstance(G, branchings.MultiDiGraph_EdgeKey)  # G should be an instance of MultiDiGraph_EdgeKey
+
+    # Test for uniqueness of edges in the path
+    for i in range(len(edges)):
+        u, v = nodes[i], nodes[i + 1]
+        edge_key = edges[i]
+        assert len(G[u][v]) == 1  # There should be exactly one edge between each pair of nodes
+        assert edge_key in G[u][v]  # The edge key should exist in the graph
+
 def test_edge_attribute_discard():
     # Test that edge attributes are discarded if we do not specify to keep them
     G = nx.Graph()
