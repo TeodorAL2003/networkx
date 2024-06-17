@@ -576,6 +576,49 @@ def test_get_path():
         assert len(G[u][v]) == 1  # There should be exactly one edge between each pair of nodes
         assert edge_key in G[u][v]  # The edge key should exist in the graph
 
+def test_edmonds_init():
+    # Mock input parameters
+    G_original = nx.MultiDiGraph()
+    G_original.add_edges_from([(1, 2, {'weight': 5, 'partition': 1}),
+                               (2, 3, {'weight': 10, 'partition': 2}),
+                               (3, 4, {'weight': 3, 'partition': 1}),
+                               (4, 5, {'weight': 8, 'partition': 2})])
+    seed = 42
+    attr = "weight"
+    default = 1
+    kind = "min"
+    style = "default"
+    preserve_attrs = True
+    partition = "partition"
+
+    # Initialize Edmonds instance
+    instance = branchings.Edmonds(G_original, seed=seed)
+
+    # Call _init method
+    instance._init(attr, default, kind, style, preserve_attrs, seed, partition)
+
+    # Assertions to verify instance attributes
+    assert instance.G_original == G_original
+    assert instance.store == True  # Check store attribute
+    assert instance.edges == []  # Ensure edges attribute is initialized
+    assert instance.template.startswith(branchings.random_string(seed=seed))  # Check template attribute
+    assert instance.candidate_attr.startswith("candidate_")  # Verify candidate_attr is set correctly
+    assert instance.attr == attr
+    assert instance.default == default
+    assert instance.kind == kind
+    assert instance.style == style
+    assert instance._attr == attr  # Verify _attr attribute
+    assert isinstance(instance.G, branchings.MultiDiGraph_EdgeKey)  # Verify G is an instance of MultiDiGraph_EdgeKey
+    assert isinstance(instance.B, branchings.MultiDiGraph_EdgeKey)  # Verify B is an instance of MultiDiGraph_EdgeKey
+    assert instance.B.edge_index == {}  # Ensure edge_index is initialized as an empty dictionary
+    assert instance.level == 0  # Check initialization of level attribute
+    assert instance.graphs == []  # Verify graphs attribute initialization
+    assert instance.branchings == []  # Verify branchings attribute initialization
+    assert isinstance(instance.uf, nx.utils.UnionFind)  # Ensure uf attribute is an instance of UnionFind
+    assert instance.circuits == []  # Check circuits attribute initialization
+    assert instance.minedge_circuit == []  # Verify minedg_circuit attribute initialization
+
+
 def test_edge_attribute_discard():
     # Test that edge attributes are discarded if we do not specify to keep them
     G = nx.Graph()
