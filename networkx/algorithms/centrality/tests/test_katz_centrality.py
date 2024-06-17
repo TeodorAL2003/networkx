@@ -109,7 +109,7 @@ class TestKatzCentrality:
         with pytest.raises(nx.NetworkXException):
             G = nx.Graph([(0, 1)])
             nx.katz_centrality(G, 0.1, beta="foo")
-
+            
 
 class TestKatzCentralityNumpy:
     @classmethod
@@ -117,6 +117,7 @@ class TestKatzCentralityNumpy:
         global np
         np = pytest.importorskip("numpy")
         pytest.importorskip("scipy")
+   
 
     def test_K5(self):
         """Katz centrality: K5"""

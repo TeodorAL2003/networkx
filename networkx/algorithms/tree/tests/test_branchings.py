@@ -268,6 +268,31 @@ def test_greedy_max3():
     B_ = build_branching(edges)
     assert_equal_branchings(B, B_, default=1)
 
+def test_min_weight():
+    # Test with positive number
+    assert branchings._min_weight(5) == -5
+
+    # Test with negative number
+    assert branchings._min_weight(-5) == 5
+
+    # Test with zero
+    assert branchings._min_weight(0) == 0
+
+    # Test with floating point number
+    assert branchings._min_weight(2.5) == -2.5
+
+def test_max_weight():
+    # Test with positive number
+    assert branchings._max_weight(5) == 5
+
+    # Test with negative number
+    assert branchings._max_weight(-5) == -5
+
+    # Test with zero
+    assert branchings._max_weight(0) == 0
+
+    # Test with floating point number
+    assert branchings._max_weight(2.5) == 2.5
 
 def test_greedy_min():
     G = G1()
