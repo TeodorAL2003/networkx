@@ -619,6 +619,29 @@ def test_edmonds_init():
     assert instance.minedge_circuit == []  # Verify minedg_circuit attribute initialization
 
 
+
+
+def test_find_optimum_max_arborescence():
+    """Test for finding the maximum arborescence."""
+    G = nx.MultiDiGraph()
+    G.add_edges_from([(1, 2, {'weight': 5}), 
+                      (2, 3, {'weight': 10}), 
+                      (3, 4, {'weight': 3}), 
+                      (4, 5, {'weight': 8})])
+    
+    ed = branchings.Edmonds(G)
+    
+    # Calculate the maximum arborescence using find_optimum
+    A = ed.find_optimum(kind="max", preserve_attrs=True)
+    
+    # Define the expected maximum arborescence manually
+    edges = [(1, 2, {'weight': 5}), (2, 3, {'weight': 10}), (3, 4, {'weight': 3}), (4, 5, {'weight': 8})]
+    A_expected = nx.MultiDiGraph()
+    A_expected.add_edges_from(edges)
+    
+    # Assert that the computed arborescence matches the expected arborescence
+    assert nx.is_isomorphic(A, A_expected)
+
 def test_edge_attribute_discard():
     # Test that edge attributes are discarded if we do not specify to keep them
     G = nx.Graph()
