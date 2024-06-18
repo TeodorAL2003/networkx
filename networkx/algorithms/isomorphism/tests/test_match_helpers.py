@@ -1,5 +1,6 @@
 from operator import eq
-
+from math import isclose
+import numpy as np
 import networkx as nx
 from networkx.algorithms import isomorphism as iso
 
@@ -8,6 +9,75 @@ def test_categorical_node_match():
     nm = iso.categorical_node_match(["x", "y", "z"], [None] * 3)
     assert nm({"x": 1, "y": 2, "z": 3}, {"x": 1, "y": 2, "z": 3})
     assert not nm({"x": 1, "y": 2, "z": 2}, {"x": 1, "y": 2, "z": 1})
+
+
+def test_generic_node_match():
+    # Single attribute match
+    nm = iso.generic_node_match("weight", 1.0, isclose)
+    assert nm({"weight": 1.0}, {"weight": 1.0})
+    assert not nm({"weight": 1.0}, {"weight": 1.1})
+    
+    # Single attribute match with default
+    assert nm({"weight": 1.0}, {})
+    assert not nm({"weight": 1.1}, {})
+    
+    # Multiple attribute match
+    nm = iso.generic_node_match(["weight", "color"], [1.0, "red"], [isclose, eq])
+    assert nm({"weight": 1.0, "color": "red"}, {"weight": 1.0, "color": "red"})
+    assert not nm({"weight": 1.0, "color": "red"}, {"weight": 1.0, "color": "blue"})
+    assert not nm({"weight": 1.1, "color": "red"}, {"weight": 1.0, "color": "red"})
+    
+    # Multiple attribute match with defaults
+    assert nm({"weight": 1.0, "color": "red"}, {"weight": 1.0})
+    assert not nm({"weight": 1.0, "color": "red"}, {"weight": 1.1})
+    assert not nm({"weight": 1.1, "color": "red"}, {"weight": 1.0})
+
+def test_numerical_node_match():
+    # Single attribute match
+    nm = iso.numerical_node_match("weight", 1.0)
+    assert nm({"weight": 1.0}, {"weight": 1.0})
+    assert not nm({"weight": 1.0}, {"weight": 1.1})
+
+    # Single attribute match with default
+    assert nm({"weight": 1.0}, {})
+    assert not nm({"weight": 1.1}, {})
+
+    # Multiple attribute match
+    nm = iso.numerical_node_match(["weight", "linewidth"], [0.25, 0.5])
+    assert nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
+    assert not nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.6})
+    assert not nm({"weight": 0.26, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
+
+
+def test_numerical_edge_match():
+    nm = iso.numerical_edge_match("weight", 1.0)
+    assert nm({"weight": 1.0}, {"weight": 1.0})
+    assert not nm({"weight": 1.0}, {"weight": 1.1})
+
+    nm = iso.numerical_edge_match(["weight", "linewidth"], [0.25, 0.5])
+    assert nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
+    assert not nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.6})
+    assert not nm({"weight": 0.26, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
+
+
+def test_numerical_multiedge_match():
+    nm = iso.numerical_multiedge_match("weight", 1.0)
+    assert nm({0: {"weight": 1.0}, 1: {"weight": 1.0}}, {0: {"weight": 1.0}, 1: {"weight": 1.0}})
+    assert not nm({0: {"weight": 1.0}, 1: {"weight": 1.0}}, {0: {"weight": 1.0}, 1: {"weight": 1.1}})
+
+    nm = iso.numerical_multiedge_match(["weight", "linewidth"], [0.25, 0.5])
+    assert nm(
+        {0: {"weight": 0.25, "linewidth": 0.5}, 1: {"weight": 0.25, "linewidth": 0.5}},
+        {0: {"weight": 0.25, "linewidth": 0.5}, 1: {"weight": 0.25, "linewidth": 0.5}},
+    )
+    assert not nm(
+        {0: {"weight": 0.25, "linewidth": 0.5}, 1: {"weight": 0.25, "linewidth": 0.5}},
+        {0: {"weight": 0.25, "linewidth": 0.5}, 1: {"weight": 0.25, "linewidth": 0.6}},
+    )
+    assert not nm(
+        {0: {"weight": 0.26, "linewidth": 0.5}, 1: {"weight": 0.25, "linewidth": 0.5}},
+        {0: {"weight": 0.25, "linewidth": 0.5}, 1: {"weight": 0.25, "linewidth": 0.5}},
+    )
 
 
 class TestGenericMultiEdgeMatch:
