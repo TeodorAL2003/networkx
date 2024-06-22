@@ -2,7 +2,7 @@
     Tests for the temporal aspect of the Temporal VF2 isomorphism algorithm.
 """
 from datetime import date, datetime, timedelta
-
+import pytest
 import networkx as nx
 from networkx.algorithms import isomorphism as iso
 
@@ -152,6 +152,7 @@ class TestDiTimeRespectingGraphMatcher:
     A test class for the directed time-respecting graph matcher.
     """
 
+
     def provide_g1_topology(self):
         G1 = nx.DiGraph()
         G1.add_edges_from(provide_g1_edgelist())
@@ -179,6 +180,7 @@ class TestDiTimeRespectingGraphMatcher:
         d = timedelta()
         gm = iso.TimeRespectingDiGraphMatcher(G1, G2, temporal_name, d)
         assert gm.subgraph_is_isomorphic()
+
 
     def test_timdelta_one_config0_returns_no_embeddings(self):
         G1 = self.provide_g1_topology()
