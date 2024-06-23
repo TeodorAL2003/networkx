@@ -1,0 +1,42 @@
+branch 0: 1
+branch 1: 1
+branch 4: 1
+total branch coverage for maximum_flow: 60.0%
+
+branch 5: 65
+branch 6: 65
+branch 4: 1
+total branch coverage for minimum_cut: 50.0%
+
+branch 1: 1
+branch 4: 13
+total branch coverage for maximum_flow_value: 50.0%
+
+branch 4: 1
+total branch coverage for minimum_cut_value: 20.0%
+
+-=-=-=-coverage report for: maxflow.txt-=-=-=-
+-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+branch 0: 3
+branch 1: 2
+branch 4: 1
+branch 2: 1
+branch 3: 1
+total branch coverage for maximum_flow: 100.0%
+
+branch 5: 65
+branch 6: 65
+branch 4: 1
+total branch coverage for minimum_cut: 50.0%
+
+branch 1: 1
+branch 4: 13
+total branch coverage for maximum_flow_value: 50.0%
+
+branch 4: 1
+total branch coverage for minimum_cut_value: 20.0%
+
+-=-=-=-coverage report for: maxflow.txt-=-=-=-
+-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+

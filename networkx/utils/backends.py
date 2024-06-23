@@ -198,10 +198,13 @@ import os
 import warnings
 from functools import partial
 from importlib.metadata import entry_points
+from networkx.utils.branch_coverage import branch_c
 
 import networkx as nx
 
 from .decorators import argmap
+
+bc_backends = branch_c("backends.txt")
 
 __all__ = ["_dispatchable"]
 
@@ -213,6 +216,7 @@ def _do_nothing():
 
 
 def _get_backends(group, *, load_and_call=False):
+    get_backend = bc_backends.branch_function(bc_backends, "_get_backends", 3)
     """
     Retrieve NetworkX ``backends`` and ``backend_info`` from the entry points.
 
@@ -238,12 +242,14 @@ def _get_backends(group, *, load_and_call=False):
     rv = {}
     for ep in items:
         if ep.name in rv:
+            get_backend.addFlag("branch 1")
             warnings.warn(
                 f"networkx backend defined more than once: {ep.name}",
                 RuntimeWarning,
                 stacklevel=2,
             )
         elif load_and_call:
+            get_backend.addFlag("branch 2")
             try:
                 rv[ep.name] = ep.load()()
             except Exception as exc:
@@ -253,6 +259,7 @@ def _get_backends(group, *, load_and_call=False):
                     stacklevel=2,
                 )
         else:
+            get_backend.addFlag("branch 3")
             rv[ep.name] = ep
     rv.pop("nx-loopback", None)
     return rv
@@ -295,12 +302,16 @@ def _always_run(name, args, kwargs):
 
 
 def _load_backend(backend_name):
+    lb = bc_backends.branch_function(bc_backends, "_load_backend", 3)
     if backend_name in _loaded_backends:
+        lb.addFlag("branch 1")
         return _loaded_backends[backend_name]
     rv = _loaded_backends[backend_name] = backends[backend_name].load()
     if not hasattr(rv, "can_run"):
+        lb.addFlag("branch 2")
         rv.can_run = _always_run
     if not hasattr(rv, "should_run"):
+        lb.addFlag("branch 3")
         rv.should_run = _always_run
     return rv
 
@@ -433,7 +444,9 @@ class _dispatchable:
             dispatching doesn't convert input graphs to a different backend for
             functions that return graphs.
         """
+        new = bc_backends.branch_function(bc_backends, "dispatchable: __new__", 18)
         if func is None:
+            new.addFlag("branch 0")
             return partial(
                 _dispatchable,
                 name=name,
@@ -448,9 +461,11 @@ class _dispatchable:
                 returns_graph=returns_graph,
             )
         if isinstance(func, str):
+            new.addFlag("branch 1")
             raise TypeError("'name' and 'graphs' must be passed by keyword") from None
         # If name not provided, use the name of the function
         if name is None:
+            new.addFlag("branch 2")
             name = func.__name__
 
         self = object.__new__(cls)
@@ -462,8 +477,10 @@ class _dispatchable:
         self.__defaults__ = func.__defaults__
         # We "magically" add `backend=` keyword argument to allow backend to be specified
         if func.__kwdefaults__:
+            new.addFlag("branch 3")
             self.__kwdefaults__ = {**func.__kwdefaults__, "backend": None}
         else:
+            new.addFlag("branch 4")
             self.__kwdefaults__ = {"backend": None}
         self.__module__ = func.__module__
         self.__qualname__ = func.__qualname__
@@ -486,56 +503,69 @@ class _dispatchable:
         self._returns_graph = returns_graph
 
         if edge_attrs is not None and not isinstance(edge_attrs, str | dict):
+            new.addFlag("branch 5")
             raise TypeError(
                 f"Bad type for edge_attrs: {type(edge_attrs)}. Expected str or dict."
             ) from None
         if node_attrs is not None and not isinstance(node_attrs, str | dict):
+            new.addFlag("branch 6")
             raise TypeError(
                 f"Bad type for node_attrs: {type(node_attrs)}. Expected str or dict."
             ) from None
         if not isinstance(self.preserve_edge_attrs, bool | str | dict):
+            new.addFlag("branch 7")
             raise TypeError(
                 f"Bad type for preserve_edge_attrs: {type(self.preserve_edge_attrs)}."
                 " Expected bool, str, or dict."
             ) from None
         if not isinstance(self.preserve_node_attrs, bool | str | dict):
+            new.addFlag("branch 8")
             raise TypeError(
                 f"Bad type for preserve_node_attrs: {type(self.preserve_node_attrs)}."
                 " Expected bool, str, or dict."
             ) from None
         if not isinstance(self.preserve_graph_attrs, bool | set):
+            new.addFlag("branch 9")
             raise TypeError(
                 f"Bad type for preserve_graph_attrs: {type(self.preserve_graph_attrs)}."
                 " Expected bool or set."
             ) from None
         if not isinstance(self.mutates_input, bool | dict):
+            new.addFlag("branch 10")
             raise TypeError(
                 f"Bad type for mutates_input: {type(self.mutates_input)}."
                 " Expected bool or dict."
             ) from None
         if not isinstance(self._returns_graph, bool):
+            new.addFlag("branch 11")
             raise TypeError(
                 f"Bad type for returns_graph: {type(self._returns_graph)}."
                 " Expected bool."
             ) from None
 
         if isinstance(graphs, str):
+            new.addFlag("branch 12")
             graphs = {graphs: 0}
         elif graphs is None:
+            new.addFlag("branch 13")
             pass
         elif not isinstance(graphs, dict):
+            new.addFlag("branch 14")
             raise TypeError(
                 f"Bad type for graphs: {type(graphs)}. Expected str or dict."
             ) from None
         elif len(graphs) == 0:
+            new.addFlag("branch 15")
             raise KeyError("'graphs' must contain at least one variable name") from None
 
         # This dict comprehension is complicated for better performance; equivalent shown below.
         self.optional_graphs = set()
         self.list_graphs = set()
         if graphs is None:
+            new.addFlag("branch 16")
             self.graphs = {}
         else:
+            new.addFlag("branch 17")
             self.graphs = {
                 self.optional_graphs.add(val := k[:-1]) or val
                 if (last := k[-1]) == "?"
@@ -560,6 +590,7 @@ class _dispatchable:
         }
 
         if name in _registered_algorithms:
+            new.addFlag("branch 18")
             raise KeyError(
                 f"Algorithm already exists in dispatch registry: {name}"
             ) from None
@@ -576,9 +607,12 @@ class _dispatchable:
         """If the cached documentation exists, it is returned.
         Otherwise, the documentation is generated using _make_doc() method,
         cached, and then returned."""
+        doc = bc_backends.branch_function(bc_backends, "dispatchable:__doc__", 2)
 
         if (rv := self._cached_doc) is not None:
+            doc.addFlag("branch 1")
             return rv
+        doc.addFlag("branch 2")
         rv = self._cached_doc = self._make_doc()
         return rv
 
@@ -594,14 +628,17 @@ class _dispatchable:
     def __signature__(self):
         """Return the signature of the original function, with the addition of
         the `backend` and `backend_kwargs` parameters."""
+        signature = bc_backends.branch_function(bc_backends, "dispatchable:__signature__", 3)
 
         if self._sig is None:
+            signature.addFlag("branch 1")
             sig = inspect.signature(self.orig_func)
             # `backend` is now a reserved argument used by dispatching.
             # assert "backend" not in sig.parameters
             if not any(
                 p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
             ):
+                signature.addFlag("branch 2")
                 sig = sig.replace(
                     parameters=[
                         *sig.parameters.values(),
@@ -614,6 +651,7 @@ class _dispatchable:
                     ]
                 )
             else:
+                signature.addFlag("branch 3")
                 *parameters, var_keyword = sig.parameters.values()
                 sig = sig.replace(
                     parameters=[
@@ -630,36 +668,47 @@ class _dispatchable:
     def __call__(self, /, *args, backend=None, **kwargs):
         """Returns the result of the original function, or the backend function if
         the backend is specified and that backend implements `func`."""
+        call = bc_backends.branch_function(bc_backends, "dispatchable:__call__", 27)
 
         if not backends:
+            call.addFlag("branch 1")
             # Fast path if no backends are installed
             return self.orig_func(*args, **kwargs)
 
         # Use `backend_name` in this function instead of `backend`
         backend_name = backend
         if backend_name is not None and backend_name not in backends:
+            call.addFlag("branch 2")
             raise ImportError(f"Unable to load backend: {backend_name}")
 
         graphs_resolved = {}
         for gname, pos in self.graphs.items():
             if pos < len(args):
+                call.addFlag("branch 3")
                 if gname in kwargs:
+                    call.addFlag("branch 4")
                     raise TypeError(f"{self.name}() got multiple values for {gname!r}")
                 val = args[pos]
             elif gname in kwargs:
+                call.addFlag("branch 4")
                 val = kwargs[gname]
             elif gname not in self.optional_graphs:
+                call.addFlag("branch 5")
                 raise TypeError(
                     f"{self.name}() missing required graph argument: {gname}"
                 )
             else:
+                call.addFlag("branch 6")
                 continue
             if val is None:
+                call.addFlag("branch 7")
                 if gname not in self.optional_graphs:
+                    call.addFlag("branch 8")
                     raise TypeError(
                         f"{self.name}() required graph argument {gname!r} is None; must be a graph"
                     )
             else:
+                call.addFlag("branch 9")
                 graphs_resolved[gname] = val
 
         # Alternative to the above that does not check duplicated args or missing required graphs.
@@ -671,14 +720,17 @@ class _dispatchable:
 
         # Check if any graph comes from a backend
         if self.list_graphs:
+            call.addFlag("branch 10")
             # Make sure we don't lose values by consuming an iterator
             args = list(args)
             for gname in self.list_graphs & graphs_resolved.keys():
                 val = list(graphs_resolved[gname])
                 graphs_resolved[gname] = val
                 if gname in kwargs:
+                    call.addFlag("branch 11")
                     kwargs[gname] = val
                 else:
+                    call.addFlag("branch 12")
                     args[self.graphs[gname]] = val
 
             has_backends = any(
@@ -688,6 +740,7 @@ class _dispatchable:
                 for gname, g in graphs_resolved.items()
             )
             if has_backends:
+                call.addFlag("branch 13")
                 graph_backend_names = {
                     getattr(g, "__networkx_backend__", "networkx")
                     for gname, g in graphs_resolved.items()
@@ -699,10 +752,12 @@ class _dispatchable:
                         for g in graphs_resolved[gname]
                     )
         else:
+            call.addFlag("branch 14")
             has_backends = any(
                 hasattr(g, "__networkx_backend__") for g in graphs_resolved.values()
             )
             if has_backends:
+                call.addFlag("branch 15")
                 graph_backend_names = {
                     getattr(g, "__networkx_backend__", "networkx")
                     for g in graphs_resolved.values()
@@ -710,6 +765,7 @@ class _dispatchable:
 
         backend_priority = config.backend_priority
         if self._is_testing and backend_priority and backend_name is None:
+            call.addFlag("branch 16")
             # Special path if we are running networkx tests with a backend.
             # This even runs for (and handles) functions that mutate input graphs.
             return self._convert_and_call_for_tests(
@@ -720,28 +776,33 @@ class _dispatchable:
             )
 
         if has_backends:
+            call.addFlag("branch 17")
             # Dispatchable graphs found! Dispatch to backend function.
             # We don't handle calls with different backend graphs yet,
             # but we may be able to convert additional networkx graphs.
             backend_names = graph_backend_names - {"networkx"}
             if len(backend_names) != 1:
+                call.addFlag("branch 18")
                 # Future work: convert between backends and run if multiple backends found
                 raise TypeError(
                     f"{self.name}() graphs must all be from the same backend, found {backend_names}"
                 )
             [graph_backend_name] = backend_names
             if backend_name is not None and backend_name != graph_backend_name:
+                call.addFlag("branch 19")
                 # Future work: convert between backends to `backend_name` backend
                 raise TypeError(
                     f"{self.name}() is unable to convert graph from backend {graph_backend_name!r} "
                     f"to the specified backend {backend_name!r}."
                 )
             if graph_backend_name not in backends:
+                call.addFlag("branch 20")
                 raise ImportError(f"Unable to load backend: {graph_backend_name}")
             if (
                 "networkx" in graph_backend_names
                 and graph_backend_name not in backend_priority
             ):
+                call.addFlag("branch 21")
                 # Not configured to convert networkx graphs to this backend
                 raise TypeError(
                     f"Unable to convert inputs and run {self.name}. "
@@ -750,7 +811,9 @@ class _dispatchable:
                 )
             backend = _load_backend(graph_backend_name)
             if hasattr(backend, self.name):
+                call.addFlag("branch 22")
                 if "networkx" in graph_backend_names:
+                    call.addFlag("branch 23")
                     # We need to convert networkx graphs to backend graphs.
                     # There is currently no need to check `self.mutates_input` here.
                     return self._convert_and_call(
@@ -772,6 +835,7 @@ class _dispatchable:
 
         # If backend was explicitly given by the user, so we need to use it no matter what
         if backend_name is not None:
+            call.addFlag("branch 24")
             return self._convert_and_call(
                 backend_name, args, kwargs, fallback_to_nx=False
             )
@@ -802,9 +866,11 @@ class _dispatchable:
                 )
             )
         ):
+            call.addFlag("branch 25")
             # Should we warn or log if we don't convert b/c the input will be mutated?
             for backend_name in backend_priority:
                 if self._should_backend_run(backend_name, *args, **kwargs):
+                    call.addFlag("branch 26")
                     return self._convert_and_call(
                         backend_name,
                         args,
@@ -812,6 +878,7 @@ class _dispatchable:
                         fallback_to_nx=self._fallback_to_nx,
                     )
         # Default: run with networkx on networkx inputs
+        call.addFlag("branch 27")
         return self.orig_func(*args, **kwargs)
 
     def _can_backend_run(self, backend_name, /, *args, **kwargs):
@@ -839,6 +906,7 @@ class _dispatchable:
         )
 
     def _convert_arguments(self, backend_name, args, kwargs, *, use_cache):
+        conv = bc_backends.branch_function(bc_backends, "dispatchable:_convert_arguments", 39)
         """Convert graph arguments to the specified backend.
 
         Returns
@@ -848,6 +916,7 @@ class _dispatchable:
         bound = self.__signature__.bind(*args, **kwargs)
         bound.apply_defaults()
         if not self.graphs:
+            conv.addFlag("branch 1")
             bound_kwargs = bound.kwargs
             del bound_kwargs["backend"]
             return bound.args, bound_kwargs
@@ -856,15 +925,19 @@ class _dispatchable:
         preserve_edge_attrs = self.preserve_edge_attrs
         edge_attrs = self.edge_attrs
         if preserve_edge_attrs is False:
+            conv.addFlag("branch 2")
             # e.g. `preserve_edge_attrs=False`
             pass
         elif preserve_edge_attrs is True:
+            conv.addFlag("branch 3")
             # e.g. `preserve_edge_attrs=True`
             edge_attrs = None
         elif isinstance(preserve_edge_attrs, str):
+            conv.addFlag("branch 4")
             if bound.arguments[preserve_edge_attrs] is True or callable(
                 bound.arguments[preserve_edge_attrs]
             ):
+                conv.addFlag("branch 5")
                 # e.g. `preserve_edge_attrs="attr"` and `func(attr=True)`
                 # e.g. `preserve_edge_attrs="attr"` and `func(attr=myfunc)`
                 preserve_edge_attrs = True
@@ -875,44 +948,54 @@ class _dispatchable:
                 or isinstance(edge_attrs, dict)
                 and preserve_edge_attrs in edge_attrs
             ):
+                conv.addFlag("branch 6")
                 # e.g. `preserve_edge_attrs="attr"` and `func(attr=False)`
                 # Treat `False` argument as meaning "preserve_edge_data=False"
                 # and not `False` as the edge attribute to use.
                 preserve_edge_attrs = False
                 edge_attrs = None
             else:
+                conv.addFlag("branch 7")
                 # e.g. `preserve_edge_attrs="attr"` and `func(attr="weight")`
                 preserve_edge_attrs = False
         # Else: e.g. `preserve_edge_attrs={"G": {"weight": 1}}`
 
         if edge_attrs is None:
+            conv.addFlag("branch 8")
             # May have been set to None above b/c all attributes are preserved
             pass
         elif isinstance(edge_attrs, str):
+            conv.addFlag("branch 9")
             if edge_attrs[0] == "[":
+                conv.addFlag("branch 10")
                 # e.g. `edge_attrs="[edge_attributes]"` (argument of list of attributes)
                 # e.g. `func(edge_attributes=["foo", "bar"])`
                 edge_attrs = {
                     edge_attr: 1 for edge_attr in bound.arguments[edge_attrs[1:-1]]
                 }
             elif callable(bound.arguments[edge_attrs]):
+                conv.addFlag("branch 11")
                 # e.g. `edge_attrs="weight"` and `func(weight=myfunc)`
                 preserve_edge_attrs = True
                 edge_attrs = None
             elif bound.arguments[edge_attrs] is not None:
+                conv.addFlag("branch 12")
                 # e.g. `edge_attrs="weight"` and `func(weight="foo")` (default of 1)
                 edge_attrs = {bound.arguments[edge_attrs]: 1}
             elif self.name == "to_numpy_array" and hasattr(
                 bound.arguments["dtype"], "names"
             ):
+                conv.addFlag("branch 13")
                 # Custom handling: attributes may be obtained from `dtype`
                 edge_attrs = {
                     edge_attr: 1 for edge_attr in bound.arguments["dtype"].names
                 }
             else:
+                conv.addFlag("branch 14")
                 # e.g. `edge_attrs="weight"` and `func(weight=None)`
                 edge_attrs = None
         else:
+            conv.addFlag("branch 15")
             # e.g. `edge_attrs={"attr": "default"}` and `func(attr="foo", default=7)`
             # e.g. `edge_attrs={"attr": 0}` and `func(attr="foo")`
             edge_attrs = {
@@ -924,15 +1007,19 @@ class _dispatchable:
         preserve_node_attrs = self.preserve_node_attrs
         node_attrs = self.node_attrs
         if preserve_node_attrs is False:
+            conv.addFlag("branch 16")
             # e.g. `preserve_node_attrs=False`
             pass
         elif preserve_node_attrs is True:
+            conv.addFlag("branch 17")
             # e.g. `preserve_node_attrs=True`
             node_attrs = None
         elif isinstance(preserve_node_attrs, str):
+            conv.addFlag("branch 18")
             if bound.arguments[preserve_node_attrs] is True or callable(
                 bound.arguments[preserve_node_attrs]
             ):
+                conv.addFlag("branch 19")
                 # e.g. `preserve_node_attrs="attr"` and `func(attr=True)`
                 # e.g. `preserve_node_attrs="attr"` and `func(attr=myfunc)`
                 preserve_node_attrs = True
@@ -943,37 +1030,46 @@ class _dispatchable:
                 or isinstance(node_attrs, dict)
                 and preserve_node_attrs in node_attrs
             ):
+                conv.addFlag("branch 20")
                 # e.g. `preserve_node_attrs="attr"` and `func(attr=False)`
                 # Treat `False` argument as meaning "preserve_node_data=False"
                 # and not `False` as the node attribute to use. Is this used?
                 preserve_node_attrs = False
                 node_attrs = None
             else:
+                conv.addFlag("branch 21")
                 # e.g. `preserve_node_attrs="attr"` and `func(attr="weight")`
                 preserve_node_attrs = False
         # Else: e.g. `preserve_node_attrs={"G": {"pos": None}}`
 
         if node_attrs is None:
+            conv.addFlag("branch 22")
             # May have been set to None above b/c all attributes are preserved
             pass
         elif isinstance(node_attrs, str):
+            conv.addFlag("branch 23")
             if node_attrs[0] == "[":
+                conv.addFlag("branch 24")
                 # e.g. `node_attrs="[node_attributes]"` (argument of list of attributes)
                 # e.g. `func(node_attributes=["foo", "bar"])`
                 node_attrs = {
                     node_attr: None for node_attr in bound.arguments[node_attrs[1:-1]]
                 }
             elif callable(bound.arguments[node_attrs]):
+                conv.addFlag("branch 25")
                 # e.g. `node_attrs="weight"` and `func(weight=myfunc)`
                 preserve_node_attrs = True
                 node_attrs = None
             elif bound.arguments[node_attrs] is not None:
+                conv.addFlag("branch 26")
                 # e.g. `node_attrs="weight"` and `func(weight="foo")`
                 node_attrs = {bound.arguments[node_attrs]: None}
             else:
+                conv.addFlag("branch 27")
                 # e.g. `node_attrs="weight"` and `func(weight=None)`
                 node_attrs = None
         else:
+            conv.addFlag("branch 28")
             # e.g. `node_attrs={"attr": "default"}` and `func(attr="foo", default=7)`
             # e.g. `node_attrs={"attr": 0}` and `func(attr="foo")`
             node_attrs = {
@@ -988,6 +1084,7 @@ class _dispatchable:
         # Future work: allow conversions between backends.
         for gname in self.graphs:
             if gname in self.list_graphs:
+                conv.addFlag("branch 29")
                 bound.arguments[gname] = [
                     self._convert_graph(
                         backend_name,
@@ -1005,30 +1102,40 @@ class _dispatchable:
                     for g in bound.arguments[gname]
                 ]
             else:
+                conv.addFlag("branch 30")
                 graph = bound.arguments[gname]
                 if graph is None:
+                    conv.addFlag("branch 31")
                     if gname in self.optional_graphs:
+                        conv.addFlag("branch 32")
                         continue
                     raise TypeError(
                         f"Missing required graph argument `{gname}` in {self.name} function"
                     )
                 if isinstance(preserve_edge_attrs, dict):
+                    conv.addFlag("branch 33")
                     preserve_edges = False
                     edges = preserve_edge_attrs.get(gname, edge_attrs)
                 else:
+                    conv.addFlag("branch 34")
                     preserve_edges = preserve_edge_attrs
                     edges = edge_attrs
                 if isinstance(preserve_node_attrs, dict):
+                    conv.addFlag("branch 35")
                     preserve_nodes = False
                     nodes = preserve_node_attrs.get(gname, node_attrs)
                 else:
+                    conv.addFlag("branch 36")
                     preserve_nodes = preserve_node_attrs
                     nodes = node_attrs
                 if isinstance(preserve_graph_attrs, set):
+                    conv.addFlag("branch 37")
                     preserve_graph = gname in preserve_graph_attrs
                 else:
+                    conv.addFlag("branch 38")
                     preserve_graph = preserve_graph_attrs
                 if getattr(graph, "__networkx_backend__", "networkx") == "networkx":
+                    conv.addFlag("branch 39")
                     bound.arguments[gname] = self._convert_graph(
                         backend_name,
                         graph,
@@ -1057,10 +1164,12 @@ class _dispatchable:
         graph_name,
         use_cache,
     ):
+        conv2 = bc_backends.branch_function(bc_backends, "dispatchable:_convert_graph", 15)
         if (
             use_cache
             and (nx_cache := getattr(graph, "__networkx_cache__", None)) is not None
         ):
+            conv2.addFlag("branch 1")
             cache = nx_cache.setdefault("backends", {}).setdefault(backend_name, {})
             # edge_attrs: dict | None
             # node_attrs: dict | None
@@ -1075,6 +1184,7 @@ class _dispatchable:
                 else preserve_node_attrs,
             )
             if cache:
+                conv2.addFlag("branch 2")
                 warning_message = (
                     f"Using cached graph for {backend_name!r} backend in "
                     f"call to {self.name}.\n\nFor the cache to be consistent "
@@ -1102,9 +1212,11 @@ class _dispatchable:
                     (node_key, True) if node_key is not True else (True,),
                 ):
                     if (rv := cache.get(compat_key)) is not None:
+                        conv2.addFlag("branch 3")
                         warnings.warn(warning_message)
                         return rv
                 if edge_key is not True and node_key is not True:
+                    conv2.addFlag("branch 4")
                     # Iterate over the items in `cache` to see if any are compatible.
                     # For example, if no edge attributes are needed, then a graph
                     # with any edge attribute will suffice. We use the same logic
@@ -1112,20 +1224,24 @@ class _dispatchable:
                     # Use `list(cache.items())` to be thread-safe.
                     for (ekey, nkey), val in list(cache.items()):
                         if edge_key is False or ekey is True:
+                            conv2.addFlag("branch 5")
                             pass  # Cache works for edge data!
                         elif (
                             edge_key is True
                             or ekey is False
                             or not edge_key.issubset(ekey)
                         ):
+                            conv2.addFlag("branch 6")
                             continue  # Cache missing required edge data; does not work
                         if node_key is False or nkey is True:
+                            conv2.addFlag("branch 7")
                             pass  # Cache works for node data!
                         elif (
                             node_key is True
                             or nkey is False
                             or not node_key.issubset(nkey)
                         ):
+                            conv2.addFlag("branch 8")
                             continue  # Cache missing required node data; does not work
                         warnings.warn(warning_message)
                         return val
@@ -1145,34 +1261,45 @@ class _dispatchable:
             graph_name=graph_name,
         )
         if use_cache and nx_cache is not None:
+            conv2.addFlag("branch 9")
             # Remove old cached items that are no longer necessary since they
             # are dominated/subsumed/outdated by what was just calculated.
             # This uses the same logic as above, but with keys switched.
             cache[key] = rv  # Set at beginning to be thread-safe
             for cur_key in list(cache):
                 if cur_key == key:
+                    conv2.addFlag("branch 10")
                     continue
                 ekey, nkey = cur_key
                 if ekey is False or edge_key is True:
+                    conv2.addFlag("branch 11")
                     pass
                 elif ekey is True or edge_key is False or not ekey.issubset(edge_key):
+                    conv2.addFlag("branch 12")
                     continue
                 if nkey is False or node_key is True:
+                    conv2.addFlag("branch 13")
                     pass
                 elif nkey is True or node_key is False or not nkey.issubset(node_key):
+                    conv2.addFlag("branch 14")
                     continue
                 cache.pop(cur_key, None)  # Use pop instead of del to be thread-safe
+        conv2.addFlag("branch 15")
 
         return rv
 
     def _convert_and_call(self, backend_name, args, kwargs, *, fallback_to_nx=False):
+        convAndCall = bc_backends.branch_function(bc_backends, "dispatchable:_convert_and_call", 4)
         """Call this dispatchable function with a backend, converting graphs if necessary."""
         backend = _load_backend(backend_name)
         if not self._can_backend_run(backend_name, *args, **kwargs):
+            convAndCall.addFlag("branch 1")
             if fallback_to_nx:
+                convAndCall.addFlag("branch 2")
                 return self.orig_func(*args, **kwargs)
             msg = f"'{self.name}' not implemented by {backend_name}"
             if hasattr(backend, self.name):
+                convAndCall.addFlag("branch 3")
                 msg += " with the given arguments"
             raise RuntimeError(msg)
 
@@ -1187,6 +1314,7 @@ class _dispatchable:
             result = getattr(backend, self.name)(*converted_args, **converted_kwargs)
         except (NotImplementedError, nx.NetworkXNotImplemented) as exc:
             if fallback_to_nx:
+                convAndCall.addFlag("branch 4")
                 return self.orig_func(*args, **kwargs)
             raise
 
@@ -1195,16 +1323,20 @@ class _dispatchable:
     def _convert_and_call_for_tests(
         self, backend_name, args, kwargs, *, fallback_to_nx=False
     ):
+        convCallTests = bc_backends.branch_function(bc_backends, "dispatchable:_convert_and_call_for_tests", 33)
         """Call this dispatchable function with a backend; for use with testing."""
         backend = _load_backend(backend_name)
         if not self._can_backend_run(backend_name, *args, **kwargs):
+            convCallTests.addFlag("branch 1")
             if fallback_to_nx or not self.graphs:
+                convCallTests.addFlag("branch 2")
                 return self.orig_func(*args, **kwargs)
 
             import pytest
 
             msg = f"'{self.name}' not implemented by {backend_name}"
             if hasattr(backend, self.name):
+                convCallTests.addFlag("branch 3")
                 msg += " with the given arguments"
             pytest.xfail(msg)
 
@@ -1222,8 +1354,10 @@ class _dispatchable:
         # so we need two sets of arguments. We tee iterators and copy
         # random state so that they may be used twice.
         if not args:
+            convCallTests.addFlag("branch 4")
             args1 = args2 = args
         else:
+            convCallTests.addFlag("branch 5")
             args1, args2 = zip(
                 *(
                     (arg, copy(arg))
@@ -1238,8 +1372,10 @@ class _dispatchable:
                 )
             )
         if not kwargs:
+            convCallTests.addFlag("branch 6")
             kwargs1 = kwargs2 = kwargs
         else:
+            convCallTests.addFlag("branch 7")
             kwargs1, kwargs2 = zip(
                 *(
                     ((k, v), (k, copy(v)))
@@ -1266,6 +1402,7 @@ class _dispatchable:
             result = getattr(backend, self.name)(*converted_args, **converted_kwargs)
         except (NotImplementedError, nx.NetworkXNotImplemented) as exc:
             if fallback_to_nx:
+                convCallTests.addFlag("branch 8")
                 return self.orig_func(*args2, **kwargs2)
             import pytest
 
@@ -1305,25 +1442,32 @@ class _dispatchable:
                 "nonisomorphic_trees",
             }
         ):
+            convCallTests.addFlag("branch 9")
             raise RuntimeError(f"`returns_graph` is incorrect for {self.name}")
 
         def check_result(val, depth=0):
             if isinstance(val, np.number):
+                convCallTests.addFlag("branch 10")
                 raise RuntimeError(
                     f"{self.name} returned a numpy scalar {val} ({type(val)}, depth={depth})"
                 )
             if isinstance(val, np.ndarray | sparray):
+                convCallTests.addFlag("branch 11")
                 return
             if isinstance(val, nx.Graph):
+                convCallTests.addFlag("branch 12")
                 check_result(val._node, depth=depth + 1)
                 check_result(val._adj, depth=depth + 1)
                 return
             if isinstance(val, Iterator):
+                convCallTests.addFlag("branch 13")
                 raise NotImplementedError
             if isinstance(val, Iterable) and not isinstance(val, str):
+                convCallTests.addFlag("branch 14")
                 for x in val:
                     check_result(x, depth=depth + 1)
             if isinstance(val, Mapping):
+                convCallTests.addFlag("branch 15")
                 for x in val.values():
                     check_result(x, depth=depth + 1)
 
@@ -1338,11 +1482,14 @@ class _dispatchable:
                 yield val
 
         if self.name in {"from_edgelist"}:
+            convCallTests.addFlag("branch 16")
             # numpy scalars are explicitly given as values in some tests
             pass
         elif isinstance(result, Iterator):
+            convCallTests.addFlag("branch 17")
             result = check_iterator(result)
         else:
+            convCallTests.addFlag("branch 18")
             try:
                 check_result(result)
             except RuntimeError as exc:
@@ -1365,6 +1512,7 @@ class _dispatchable:
             "recursive_simple_cycles",
             "connected_double_edge_swap",
         }:
+            convCallTests.addFlag("branch 19")
             # Special-case algorithms that mutate input graphs
             bound = self.__signature__.bind(*converted_args, **converted_kwargs)
             bound.apply_defaults()
@@ -1376,6 +1524,7 @@ class _dispatchable:
                 "recursive_simple_cycles",
                 "connected_double_edge_swap",
             }:
+                convCallTests.addFlag("branch 20")
                 G1 = backend.convert_to_nx(bound.arguments["G"])
                 G2 = bound2.arguments["G"]
                 G2._adj = G1._adj
@@ -1383,14 +1532,17 @@ class _dispatchable:
                     G2._pred = G1._pred
                 nx._clear_cache(G2)
             elif self.name == "edmonds_karp":
+                convCallTests.addFlag("branch 21")
                 R1 = backend.convert_to_nx(bound.arguments["residual"])
                 R2 = bound2.arguments["residual"]
                 if R1 is not None and R2 is not None:
+                    convCallTests.addFlag("branch 22")
                     for k, v in R1.edges.items():
                         R2.edges[k]["flow"] = v["flow"]
                     R2.graph.update(R1.graph)
                     nx._clear_cache(R2)
             elif self.name == "barycenter" and bound.arguments["attr"] is not None:
+                convCallTests.addFlag("branch 23")
                 G1 = backend.convert_to_nx(bound.arguments["G"])
                 G2 = bound2.arguments["G"]
                 attr = bound.arguments["attr"]
@@ -1401,12 +1553,14 @@ class _dispatchable:
                 self.name in {"contracted_nodes", "contracted_edge"}
                 and not bound.arguments["copy"]
             ):
+                convCallTests.addFlag("branch 24")
                 # Edges and nodes changed; node "contraction" and edge "weight" attrs
                 G1 = backend.convert_to_nx(bound.arguments["G"])
                 G2 = bound2.arguments["G"]
                 G2.__dict__.update(G1.__dict__)
                 nx._clear_cache(G2)
             elif self.name == "stochastic_graph" and not bound.arguments["copy"]:
+                convCallTests.addFlag("branch 25")
                 G1 = backend.convert_to_nx(bound.arguments["G"])
                 G2 = bound2.arguments["G"]
                 for k, v in G1.edges.items():
@@ -1417,22 +1571,27 @@ class _dispatchable:
                 and not bound.arguments["copy"]
                 or self.name in {"incremental_closeness_centrality"}
             ):
+                convCallTests.addFlag("branch 26")
                 G1 = backend.convert_to_nx(bound.arguments["G"])
                 G2 = bound2.arguments["G"]
                 if G1 is G2:
+                    convCallTests.addFlag("branch 27")
                     return G2
                 G2._node.clear()
                 G2._node.update(G1._node)
                 G2._adj.clear()
                 G2._adj.update(G1._adj)
                 if hasattr(G1, "_pred") and hasattr(G2, "_pred"):
+                    convCallTests.addFlag("branch 28")
                     G2._pred.clear()
                     G2._pred.update(G1._pred)
                 if hasattr(G1, "_succ") and hasattr(G2, "_succ"):
+                    convCallTests.addFlag("branch 29")
                     G2._succ.clear()
                     G2._succ.update(G1._succ)
                 nx._clear_cache(G2)
                 if self.name == "relabel_nodes":
+                    convCallTests.addFlag("branch 30")
                     return G2
             return backend.convert_to_nx(result)
 
@@ -1460,11 +1619,13 @@ class _dispatchable:
             # graph comparison fails b/c of nan values
             "read_gexf",
         }:
+            convCallTests.addFlag("branch 31")
             # For graph return types (e.g. generators), we compare that results are
             # the same between the backend and networkx, then return the original
             # networkx result so the iteration order will be consistent in tests.
             G = self.orig_func(*args2, **kwargs2)
             if not nx.utils.graphs_equal(G, converted_result):
+                convCallTests.addFlag("branch 32")
                 assert G.number_of_nodes() == converted_result.number_of_nodes()
                 assert G.number_of_edges() == converted_result.number_of_edges()
                 assert G.graph == converted_result.graph
@@ -1473,13 +1634,16 @@ class _dispatchable:
                 assert type(G) is type(converted_result)
                 raise AssertionError("Graphs are not equal")
             return G
+        convCallTests.addFlag("branch 33")
         return converted_result
 
     def _make_doc(self):
         """Generate the backends section at the end for functions having an alternate
         backend implementation(s) using the `backend_info` entry-point."""
+        makeDoc = bc_backends.branch_function(bc_backends, "dispatchable:_make_doc", 11)
 
         if not self.backends:
+            makeDoc.addFlag("branch 1")
             return self._orig_doc
         lines = [
             "Backends",
@@ -1488,10 +1652,13 @@ class _dispatchable:
         for backend in sorted(self.backends):
             info = backend_info[backend]
             if "short_summary" in info:
+                makeDoc.addFlag("branch 2")
                 lines.append(f"{backend} : {info['short_summary']}")
             else:
+                makeDoc.addFlag("branch 3")
                 lines.append(backend)
             if "functions" not in info or self.name not in info["functions"]:
+                makeDoc.addFlag("branch 4")
                 lines.append("")
                 continue
 
@@ -1501,11 +1668,13 @@ class _dispatchable:
             if func_docs := (
                 func_info.get("additional_docs") or func_info.get("extra_docstring")
             ):
+                makeDoc.addFlag("branch 5")
                 lines.extend(
                     f"  {line}" if line else line for line in func_docs.split("\n")
                 )
                 add_gap = True
             else:
+                makeDoc.addFlag("branch 6")
                 add_gap = False
 
             # Renaming extra_parameters to additional_parameters
@@ -1513,18 +1682,23 @@ class _dispatchable:
                 func_info.get("extra_parameters")
                 or func_info.get("additional_parameters")
             ):
+                makeDoc.addFlag("branch 7")
                 if add_gap:
+                    makeDoc.addFlag("branch 8")
                     lines.append("")
                 lines.append("  Additional parameters:")
                 for param in sorted(extra_parameters):
                     lines.append(f"    {param}")
                     if desc := extra_parameters[param]:
+                        makeDoc.addFlag("branch 9")
                         lines.append(f"      {desc}")
                     lines.append("")
             else:
+                makeDoc.addFlag("branch 10")
                 lines.append("")
 
             if func_url := func_info.get("url"):
+                makeDoc.addFlag("branch 11")
                 lines.append(f"[`Source <{func_url}>`_]")
                 lines.append("")
 

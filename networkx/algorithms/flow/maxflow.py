@@ -9,6 +9,9 @@ from .edmondskarp import edmonds_karp
 from .preflowpush import preflow_push
 from .shortestaugmentingpath import shortest_augmenting_path
 from .utils import build_flow_dict
+from networkx.utils.branch_coverage import branch_c
+
+bc_maxFlow = branch_c("maxflow.txt")
 
 # Define the default flow function for computing maximum flow.
 default_flow_func = preflow_push
@@ -144,8 +147,13 @@ def maximum_flow(flowG, _s, _t, capacity="capacity", flow_func=None, **kwargs):
     True
 
     """
+
+    maxFlow = bc_maxFlow.branch_function(bc_maxFlow, "maximum_flow", 5)
+    maxFlow.addFlag("branch 0")
     if flow_func is None:
+        maxFlow.addFlag("branch 1")
         if kwargs:
+            maxFlow.addFlag("branch 2")
             raise nx.NetworkXError(
                 "You have to explicitly set a flow_func if"
                 " you need to pass parameters via kwargs."
@@ -153,7 +161,10 @@ def maximum_flow(flowG, _s, _t, capacity="capacity", flow_func=None, **kwargs):
         flow_func = default_flow_func
 
     if not callable(flow_func):
+        maxFlow.addFlag("branch 3")
         raise nx.NetworkXError("flow_func has to be callable.")
+    
+    maxFlow.addFlag("branch 4")
 
     R = flow_func(flowG, _s, _t, capacity=capacity, value_only=False, **kwargs)
     flow_dict = build_flow_dict(flowG, R)
@@ -283,8 +294,13 @@ def maximum_flow_value(flowG, _s, _t, capacity="capacity", flow_func=None, **kwa
     True
 
     """
+
+    maxFlowVal = bc_maxFlow.branch_function(bc_maxFlow, "maximum_flow_value", 4)
+
     if flow_func is None:
+        maxFlowVal.addFlag("branch 1")
         if kwargs:
+            maxFlowVal.addFlag("branch 2")
             raise nx.NetworkXError(
                 "You have to explicitly set a flow_func if"
                 " you need to pass parameters via kwargs."
@@ -292,7 +308,10 @@ def maximum_flow_value(flowG, _s, _t, capacity="capacity", flow_func=None, **kwa
         flow_func = default_flow_func
 
     if not callable(flow_func):
+        maxFlowVal.addFlag("branch 3")
         raise nx.NetworkXError("flow_func has to be callable.")
+    
+    maxFlowVal.addFlag("branch 4")
 
     R = flow_func(flowG, _s, _t, capacity=capacity, value_only=True, **kwargs)
 
@@ -432,8 +451,13 @@ def minimum_cut(flowG, _s, _t, capacity="capacity", flow_func=None, **kwargs):
     True
 
     """
+
+    minCut = bc_maxFlow.branch_function(bc_maxFlow, "minimum_cut", 6)
+
     if flow_func is None:
+        minCut.addFlag("branch 1")
         if kwargs:
+            minCut.addFlag("branch 2")
             raise nx.NetworkXError(
                 "You have to explicitly set a flow_func if"
                 " you need to pass parameters via kwargs."
@@ -441,9 +465,11 @@ def minimum_cut(flowG, _s, _t, capacity="capacity", flow_func=None, **kwargs):
         flow_func = default_flow_func
 
     if not callable(flow_func):
+        minCut.addFlag("branch 3")
         raise nx.NetworkXError("flow_func has to be callable.")
 
     if kwargs.get("cutoff") is not None and flow_func is preflow_push:
+        minCut.addFlag("branch 4")
         raise nx.NetworkXError("cutoff should not be specified.")
 
     R = flow_func(flowG, _s, _t, capacity=capacity, value_only=True, **kwargs)
@@ -459,7 +485,10 @@ def minimum_cut(flowG, _s, _t, capacity="capacity", flow_func=None, **kwargs):
     # Finally add again cutset edges to the residual network to make
     # sure that it is reusable.
     if cutset is not None:
+        minCut.addFlag("branch 5")
         R.add_edges_from(cutset)
+
+    minCut.addFlag("branch 6")
     return (R.graph["flow_value"], partition)
 
 
@@ -582,8 +611,12 @@ def minimum_cut_value(flowG, _s, _t, capacity="capacity", flow_func=None, **kwar
     True
 
     """
+    minCutVal = bc_maxFlow.branch_function(bc_maxFlow, "minimum_cut_value", 5)
+
     if flow_func is None:
+        minCutVal.addFlag("branch 1")
         if kwargs:
+            minCutVal.addFlag("branch 2")
             raise nx.NetworkXError(
                 "You have to explicitly set a flow_func if"
                 " you need to pass parameters via kwargs."
@@ -591,10 +624,14 @@ def minimum_cut_value(flowG, _s, _t, capacity="capacity", flow_func=None, **kwar
         flow_func = default_flow_func
 
     if not callable(flow_func):
+        minCutVal.addFlag("branch 3")
         raise nx.NetworkXError("flow_func has to be callable.")
 
     if kwargs.get("cutoff") is not None and flow_func is preflow_push:
+        minCutVal.addFlag("branch 4")
         raise nx.NetworkXError("cutoff should not be specified.")
+
+    minCutVal.addFlag("branch 5")
 
     R = flow_func(flowG, _s, _t, capacity=capacity, value_only=True, **kwargs)
 

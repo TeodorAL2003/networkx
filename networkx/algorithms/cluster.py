@@ -16,12 +16,9 @@ __all__ = [
     "generalized_degree",
 ]
 
-fileBranches = branch_c()
-
 @not_implemented_for("directed")
 @nx._dispatchable
 def triangles(G, nodes=None):
-    triangle = fileBranches.branch_function(fileBranches, "triangles", 2)
     """Compute the number of triangles.
 
     Finds the number of triangles that include a node as one vertex.
@@ -58,10 +55,8 @@ def triangles(G, nodes=None):
 
     """
     if nodes is not None:
-        triangle.addFlag("branch 1")
         # If `nodes` represents a single node, return only its number of triangles
         if nodes in G:
-            triangle.addFlag("branch 2")
             return next(_triangles_and_degree_iter(G, nodes))[2] // 2
 
         # if `nodes` is a container of nodes, then return a
@@ -94,7 +89,6 @@ def triangles(G, nodes=None):
 
 @not_implemented_for("multigraph")
 def _triangles_and_degree_iter(G, nodes=None):
-    triangles_and_degree = fileBranches.branch_function(fileBranches, "triangles and degree", 2)
     """Return an iterator of (node, degree, triangles, generalized degree).
 
     This double counts triangles so you may want to divide by 2.
@@ -103,10 +97,8 @@ def _triangles_and_degree_iter(G, nodes=None):
 
     """
     if nodes is None:
-        triangles_and_degree.addFlag("branch 1")
         nodes_nbrs = G.adj.items()
     else:
-        triangles_and_degree.addFlag("branch 2")
         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
 
     for v, v_nbrs in nodes_nbrs:
@@ -118,7 +110,6 @@ def _triangles_and_degree_iter(G, nodes=None):
 
 @not_implemented_for("multigraph")
 def _weighted_triangles_and_degree_iter(G, nodes=None, weight="weight"):
-    weighted = fileBranches.branch_function(fileBranches, "weighted", 4)
     """Return an iterator of (node, degree, weighted_triangles).
 
     Used for weighted clustering.
@@ -130,16 +121,12 @@ def _weighted_triangles_and_degree_iter(G, nodes=None, weight="weight"):
     import numpy as np
 
     if weight is None or G.number_of_edges() == 0:
-        weighted.addFlag("branch 1")
         max_weight = 1
     else:
-        weighted.addFlag("branch 2")
         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
     if nodes is None:
-        weighted.addFlag("branch 3")
         nodes_nbrs = G.adj.items()
     else:
-        weighted.addFlag("branch 4")
         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
 
     def wt(u, v):
@@ -164,7 +151,6 @@ def _weighted_triangles_and_degree_iter(G, nodes=None, weight="weight"):
 
 @not_implemented_for("multigraph")
 def _directed_triangles_and_degree_iter(G, nodes=None):
-    directed = fileBranches.branch_function(fileBranches, "directed_triangles", 0)
     """Return an iterator of
     (node, total_degree, reciprocal_degree, directed_triangles).
 
@@ -198,7 +184,6 @@ def _directed_triangles_and_degree_iter(G, nodes=None):
 
 @not_implemented_for("multigraph")
 def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight="weight"):
-    directed_weighted = fileBranches.branch_function(fileBranches, "directed and weighted triangles", 2)
     """Return an iterator of
     (node, total_degree, reciprocal_degree, directed_weighted_triangles).
 
@@ -210,10 +195,8 @@ def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight="weight")
     import numpy as np
 
     if weight is None or G.number_of_edges() == 0:
-        directed_weighted.addFlag("branch 1")
         max_weight = 1
     else:
-        directed_weighted.addFlag("branch 2")
         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
 
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
@@ -265,7 +248,6 @@ def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight="weight")
 
 @nx._dispatchable(edge_attrs="weight")
 def average_clustering(G, nodes=None, weight=None, count_zeros=True):
-    avg_cluster = fileBranches.branch_function(fileBranches, "average clustering", 1)
     r"""Compute the average clustering coefficient for the graph G.
 
     The clustering coefficient for the graph is the average,
@@ -320,14 +302,12 @@ def average_clustering(G, nodes=None, weight=None, count_zeros=True):
     """
     c = clustering(G, nodes, weight=weight).values()
     if not count_zeros:
-        avg_cluster.addFlag("branch 1")
         c = [v for v in c if abs(v) > 0]
     return sum(c) / len(c)
 
 
 @nx._dispatchable(edge_attrs="weight")
 def clustering(G, nodes=None, weight=None):
-    cluster = fileBranches.branch_function(fileBranches, "clustering", 8)
     r"""Compute the clustering coefficient for nodes.
 
     For unweighted graphs, the clustering of a node :math:`u`
@@ -415,43 +395,34 @@ def clustering(G, nodes=None, weight=None):
        Physical Review E, 76(2), 026107 (2007).
     """
     if G.is_directed():
-        cluster.addFlag("branch 1")
         if weight is not None:
-            cluster.addFlag("branch 2")
             td_iter = _directed_weighted_triangles_and_degree_iter(G, nodes, weight)
             clusterc = {
                 v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
                 for v, dt, db, t in td_iter
             }
         else:
-            cluster.addFlag("branch 3")
             td_iter = _directed_triangles_and_degree_iter(G, nodes)
             clusterc = {
                 v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
                 for v, dt, db, t in td_iter
             }
     else:
-        cluster.addFlag("branch 4")
         # The formula 2*T/(d*(d-1)) from docs is t/(d*(d-1)) here b/c t==2*T
         if weight is not None:
-            cluster.addFlag("branch 5")
             td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
             clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for v, d, t in td_iter}
         else:
-            cluster.addFlag("branch 6")
             td_iter = _triangles_and_degree_iter(G, nodes)
             clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for v, d, t, _ in td_iter}
     if nodes in G:
-        cluster.addFlag("branch 7")
         # Return the value of the sole entry in the dictionary.
         return clusterc[nodes]
-    cluster.addFlag("branch 8")
     return clusterc
 
 
 @nx._dispatchable
 def transitivity(G):
-    transitive = fileBranches.branch_function(fileBranches, "transitivity", 1)
     r"""Compute graph transitivity, the fraction of all possible triangles
     present in G.
 
@@ -488,7 +459,6 @@ def transitivity(G):
     ]
     # If the graph is empty
     if len(triangles_contri) == 0:
-        transitive.addFlag("branch 1")
         return 0
     triangles, contri = map(sum, zip(*triangles_contri))
     return 0 if triangles == 0 else triangles / contri
@@ -496,7 +466,6 @@ def transitivity(G):
 
 @nx._dispatchable
 def square_clustering(G, nodes=None):
-    square = fileBranches.branch_function(fileBranches, "square_clustering", 4)
     r"""Compute the squares clustering coefficient for nodes.
 
     For each node return the fraction of possible squares that exist at
@@ -551,10 +520,8 @@ def square_clustering(G, nodes=None):
         https://arxiv.org/abs/0710.0117v1
     """
     if nodes is None:
-        square.addFlag("branch 1")
         node_iter = G
     else:
-        square.addFlag("branch 2")
         node_iter = G.nbunch_iter(nodes)
     clustering = {}
     for v in node_iter:
@@ -570,17 +537,14 @@ def square_clustering(G, nodes=None):
         if potential > 0:
             clustering[v] /= potential
     if nodes in G:
-        square.addFlag("branch 3")
         # Return the value of the sole entry in the dictionary.
         return clustering[nodes]
-    square.addFlag("branch 4")
     return clustering
 
 
 @not_implemented_for("directed")
 @nx._dispatchable
 def generalized_degree(G, nodes=None):
-    generalized = fileBranches.branch_function(fileBranches, "generalized_degree", 2)
     r"""Compute the generalized degree for nodes.
 
     For each node, the generalized degree shows how many edges of given
@@ -640,7 +604,5 @@ def generalized_degree(G, nodes=None):
         https://iopscience.iop.org/article/10.1209/0295-5075/97/28005
     """
     if nodes in G:
-        generalized.addFlag("branch 1")
         return next(_triangles_and_degree_iter(G, nodes))[3]
-    generalized.addFlag("branch 2")
     return {v: gd for v, d, t, gd in _triangles_and_degree_iter(G, nodes)}

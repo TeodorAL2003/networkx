@@ -5,13 +5,16 @@ class branch_c:
 
     functions: List['branch_function'] = []
 
-    def __init__(self):
-        self.file = open("coverage report", "w")
+    def __init__(self, filename):
+        self.file = open(f"coverage report {filename}", "a")
+        self.fileName = filename
         pass
 
     def reportAll(self, functions: List['branch_function']):
+        self.file.write(f"-=-=-=-coverage report for: {self.fileName}-=-=-=-\n")
         for fun in functions:
             fun.report()
+        self.file.write(f"-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\n")
 
     def contains_member_with_value(self, value : str):
         for obj in self.functions:

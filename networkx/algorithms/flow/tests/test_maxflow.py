@@ -89,6 +89,31 @@ def compare_flows_and_cuts(G, s, t, solnFlows, solnValue, capacity="capacity"):
 
 
 class TestMaxflowMinCutCommon:
+    def test_max_flow_directly(self):
+        G = nx.Graph()
+        G.add_edge('a', 'b', capacity=2)
+
+        flowVal, flowDict = nx.maximum_flow(G, 'a', 'b')
+        assert(flowVal == 2)
+        assert(flowDict['a']['b'] == 2)
+
+    def test_max_flow_exceptions(self):
+        G = nx.Graph()
+        G.add_edge('a', 'b', capacity=2)
+
+        try:
+            flowVal, flowDict = nx.maximum_flow(G, 'a', 'b', kwargs=["someKwarg"])
+        except nx.NetworkXError as e:
+            assert(e.args[0] == "You have to explicitly set a flow_func if"
+                " you need to pass parameters via kwargs.")
+            
+        try:
+            uncallableParam = 0
+            flowVal, flowDict = nx.maximum_flow(G, 'a', 'b', flow_func=uncallableParam)
+        except nx.NetworkXError as e:
+            assert(e.args[0] == "flow_func has to be callable.")
+            
+
     def test_graph1(self):
         # Trivial undirected graph
         G = nx.Graph()
