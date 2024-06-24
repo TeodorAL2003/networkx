@@ -30,11 +30,11 @@ import string
 from dataclasses import dataclass, field
 from operator import itemgetter
 from queue import PriorityQueue
-
 import networkx as nx
 from networkx.utils import py_random_state
-
 from .recognition import is_arborescence, is_branching
+from networkx.utils.branch_coverage import branch_c
+branchCoverer = branch_c("branchings.txt")
 
 __all__ = [
     "branching_weight",
@@ -216,14 +216,21 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
         warnings.warn(msg, DeprecationWarning)
 
     def remove_node(self, n):
+        removeNodeCoverage = branchCoverer.branch_function(branchCoverer, "remove_node", 6)
         keys = set()
         for keydict in self.pred[n].values():
+            removeNodeCoverage.addFlag("1")
             keys.update(keydict)
+        removeNodeCoverage.addFlag("2")    
         for keydict in self.succ[n].values():
+            removeNodeCoverage.addFlag("3")
             keys.update(keydict)
+        removeNodeCoverage.addFlag("4")    
 
         for key in keys:
+            removeNodeCoverage.addFlag("5")
             del self.edge_index[key]
+        removeNodeCoverage.addFlag("6")
 
         self._cls.remove_node(n)
 
@@ -340,7 +347,9 @@ class Edmonds:
           other edge attributes if we set preserve_attrs = True.
         - Setup the buckets and union find data structures required for the algorithm.
         """
+        initCoverage = branchCoverer.branch_function(branchCoverer, "_init", 11)
         if kind not in KINDS:
+            initCoverage.addFlag("1")
             raise nx.NetworkXException("Unknown value for `kind`.")
 
         # Store inputs.
@@ -351,12 +360,15 @@ class Edmonds:
 
         # Determine how we are going to transform the weights.
         if kind == "min":
+            initCoverage.addFlag("2")
             self.trans = trans = _min_weight
         else:
+            initCoverage.addFlag("3")
             self.trans = trans = _max_weight
 
         if attr is None:
             # Generate a random attr the graph probably won't have.
+            initCoverage.addFlag("4")
             attr = random_string(seed=seed)
 
         # This is the actual attribute used by the algorithm.
@@ -371,18 +383,24 @@ class Edmonds:
         self.G = G = MultiDiGraph_EdgeKey()
         self.G.__networkx_cache__ = None  # Disable caching
         for key, (u, v, data) in enumerate(self.G_original.edges(data=True)):
+            initCoverage.addFlag("5")
             d = {attr: trans(data.get(attr, default))}
 
             if data.get(partition) is not None:
+                initCoverage.addFlag("7")
                 d[partition] = data.get(partition)
 
             if preserve_attrs:
+                initCoverage.addFlag("8")
                 for d_k, d_v in data.items():
+                    initCoverage.addFlag("9")
                     if d_k != attr:
+                        initCoverage.addFlag("11")
                         d[d_k] = d_v
+                initCoverage.addFlag("10")
 
             G.add_edge(u, v, key, **d)
-
+        initCoverage.addFlag("6")
         self.level = 0
 
         # These are the "buckets" from the paper.
@@ -461,6 +479,7 @@ class Edmonds:
             The branching.
 
         """
+        findOptimumCoverer = branchCoverer.branch_function(branchCoverer, "find_optimum", 59)
         self._init(attr, default, kind, style, preserve_attrs, seed, partition)
         uf = self.uf
 
@@ -483,36 +502,45 @@ class Edmonds:
             edge = None
             weight = -INF
             for u, _, key, data in G.in_edges(v, data=True, keys=True):
+                findOptimumCoverer.addFlag("1")
                 # Skip excluded edges
                 if data.get(partition) == nx.EdgePartition.EXCLUDED:
+                    findOptimumCoverer.addFlag("3")
                     continue
                 new_weight = data[attr]
                 # Return the included edge
                 if data.get(partition) == nx.EdgePartition.INCLUDED:
+                    findOptimumCoverer.addFlag("4")
                     weight = new_weight
                     edge = (u, v, key, new_weight, data)
                     return edge, weight
                 # Find the best open edge
                 if new_weight > weight:
+                    findOptimumCoverer.addFlag("5")
                     weight = new_weight
                     edge = (u, v, key, new_weight, data)
-
+            findOptimumCoverer.addFlag("2")
             return edge, weight
 
         while True:
+            findOptimumCoverer.addFlag("6")
             # (I1): Choose a node v in G^i not in D^i.
             try:
+                findOptimumCoverer.addFlag("8")
                 v = next(nodes)
             except StopIteration:
+                findOptimumCoverer.addFlag("9")
                 # If there are no more new nodes to consider, then we *should*
                 # meet the break condition (b) from the paper:
                 #   (b) every node of G^i is in D^i and E^i is a branching
                 # Construction guarantees that it's a branching.
                 assert len(G) == len(B)
                 if len(B):
+                    findOptimumCoverer.addFlag("10")
                     assert is_branching(B)
 
                 if self.store:
+                    findOptimumCoverer.addFlag("11")
                     self.graphs.append(G.copy())
                     self.branchings.append(B.copy())
 
@@ -523,10 +551,12 @@ class Edmonds:
                     self.minedge_circuit.append(None)
                 break
             else:
+                findOptimumCoverer.addFlag("12")
                 if v in D:
+                    findOptimumCoverer.addFlag("13")
                     # print("v in D", v)
                     continue
-
+            findOptimumCoverer.addFlag("7")           
             # Put v into bucket D^i.
             # print(f"Adding node {v}")
             D.add(v)
@@ -537,14 +567,17 @@ class Edmonds:
             edge, weight = desired_edge(v)
             # print(f"Max edge is {edge!r}")
             if edge is None:
+                findOptimumCoverer.addFlag("14")
                 # If there is no edge, continue with a new node at (I1).
                 continue
             else:
+                findOptimumCoverer.addFlag("15")
                 # Determine if adding the edge to E^i would mean its no longer
                 # a branching. Presently, v has indegree 0 in B---it is a root.
                 u = edge[0]
 
                 if uf[u] == uf[v]:
+                    findOptimumCoverer.addFlag("16")
                     # Then adding the edge will create a circuit. Then B
                     # contains a unique path P from v to u. So condition (a)
                     # from the paper does hold. We need to store the circuit
@@ -552,6 +585,7 @@ class Edmonds:
                     Q_nodes, Q_edges = get_path(B, v, u)
                     Q_edges.append(edge[2])  # Edge key
                 else:
+                    findOptimumCoverer.addFlag("17")
                     # Then B with the edge is still a branching and condition
                     # (a) from the paper does not hold.
                     Q_nodes, Q_edges = None, None
@@ -562,19 +596,24 @@ class Edmonds:
                 # If weight < 0, then it cannot help in finding a maximum branching.
                 # This is the root of the problem with minimum branching.
                 if self.style == "branching" and weight <= 0:
+                    findOptimumCoverer.addFlag("18")
                     acceptable = False
                 else:
+                    findOptimumCoverer.addFlag("19")
                     acceptable = True
 
                 # print(f"Edge is acceptable: {acceptable}")
                 if acceptable:
+                    findOptimumCoverer.addFlag("20")
                     dd = {attr: weight}
                     if edge[4].get(partition) is not None:
+                        findOptimumCoverer.addFlag("21")
                         dd[partition] = edge[4].get(partition)
                     B.add_edge(u, v, edge[2], **dd)
                     G[u][v][edge[2]][self.candidate_attr] = True
                     uf.union(u, v)
                     if Q_edges is not None:
+                        findOptimumCoverer.addFlag("22")
                         # print("Edge introduced a simple cycle:")
                         # print(Q_nodes, Q_edges)
 
@@ -588,21 +627,25 @@ class Edmonds:
                         minedge = None
                         Q_incoming_weight = {}
                         for edge_key in Q_edges:
+                            findOptimumCoverer.addFlag("23")
                             u, v, data = B.edge_index[edge_key]
                             # We cannot remove an included edges, even if it is
                             # the minimum edge in the circuit
                             w = data[attr]
                             Q_incoming_weight[v] = w
                             if data.get(partition) == nx.EdgePartition.INCLUDED:
+                                findOptimumCoverer.addFlag("25")
                                 continue
                             if w < minweight:
+                                findOptimumCoverer.addFlag("26")
                                 minweight = w
                                 minedge = edge_key
-
+                        findOptimumCoverer.addFlag("24")
                         self.circuits.append(Q_edges)
                         self.minedge_circuit.append(minedge)
 
                         if self.store:
+                            findOptimumCoverer.addFlag("27")
                             self.graphs.append(G.copy())
                         # Always need the branching with circuits.
                         self.branchings.append(B.copy())
@@ -615,17 +658,23 @@ class Edmonds:
                         G.add_node(new_node)
                         new_edges = []
                         for u, v, key, data in G.edges(data=True, keys=True):
+                            findOptimumCoverer.addFlag("28")
                             if u in Q_incoming_weight:
+                                findOptimumCoverer.addFlag("30")
                                 if v in Q_incoming_weight:
+                                    findOptimumCoverer.addFlag("31")
                                     # Circuit edge, do nothing for now.
                                     # Eventually delete it.
                                     continue
                                 else:
+                                    findOptimumCoverer.addFlag("32")
                                     # Outgoing edge. Make it from new node
                                     dd = data.copy()
                                     new_edges.append((new_node, v, key, dd))
                             else:
+                                findOptimumCoverer.addFlag("33")
                                 if v in Q_incoming_weight:
+                                    findOptimumCoverer.addFlag("34")
                                     # Incoming edge. Change its weight
                                     w = data[attr]
                                     w += minweight - Q_incoming_weight[v]
@@ -633,20 +682,23 @@ class Edmonds:
                                     dd[attr] = w
                                     new_edges.append((u, new_node, key, dd))
                                 else:
+                                    findOptimumCoverer.addFlag("35")
                                     # Outside edge. No modification necessary.
                                     continue
-
+                        findOptimumCoverer.addFlag("29")
                         G.remove_nodes_from(Q_nodes)
                         B.remove_nodes_from(Q_nodes)
                         D.difference_update(set(Q_nodes))
 
                         for u, v, key, data in new_edges:
+                            findOptimumCoverer.addFlag("36")
                             G.add_edge(u, v, key, **data)
                             if self.candidate_attr in data:
+                                findOptimumCoverer.addFlag("38")
                                 del data[self.candidate_attr]
                                 B.add_edge(u, v, key, **data)
                                 uf.union(u, v)
-
+                        findOptimumCoverer.addFlag("37")
                         nodes = iter(list(G.nodes()))
                         self.level += 1
                     # END STEP (I2)?
@@ -664,18 +716,25 @@ class Edmonds:
 
             """
             if u not in G:
+                findOptimumCoverer.addFlag("39")
                 # print(G.nodes(), u)
                 raise Exception(f"{u!r} not in G")
             for v in G.pred[u]:
+                findOptimumCoverer.addFlag("40")
                 for edgekey in G.pred[u][v]:
+                    findOptimumCoverer.addFlag("41")
                     if edgekey in edgekeys:
+                        findOptimumCoverer.addFlag("42")
                         return False, edgekey
+                findOptimumCoverer.addFlag("43")  
             else:
+                findOptimumCoverer.addFlag("44")
                 return True, None
 
         # Start with the branching edges in the last level.
         edges = set(self.branchings[self.level].edge_index)
         while self.level > 0:
+            findOptimumCoverer.addFlag("45")
             self.level -= 1
 
             # The current level is i, and we start counting from 0.
@@ -697,13 +756,16 @@ class Edmonds:
             isroot, edgekey = is_root(self.graphs[self.level + 1], merged_node, edges)
             edges.update(circuit)
             if isroot:
+                findOptimumCoverer.addFlag("47")
                 minedge = self.minedge_circuit[self.level]
                 if minedge is None:
+                    findOptimumCoverer.addFlag("48")
                     raise Exception
 
                 # Remove the edge in the cycle with minimum weight.
                 edges.remove(minedge)
             else:
+                findOptimumCoverer.addFlag("49")
                 # We have identified an edge at next higher level that
                 # transitions into the merged node at the level. That edge
                 # transitions to some corresponding node at the current level.
@@ -716,31 +778,38 @@ class Edmonds:
                 # print(G.edge_index)
                 target = G.edge_index[edgekey][1]
                 for edgekey in circuit:
+                    findOptimumCoverer.addFlag("50")
                     u, v, data = G.edge_index[edgekey]
                     if v == target:
+                        findOptimumCoverer.addFlag("52")  
                         break
                 else:
+                    findOptimumCoverer.addFlag("53")  
                     raise Exception("Couldn't find edge incoming to merged node.")
-
+                findOptimumCoverer.addFlag("51")  
                 edges.remove(edgekey)
-
+        findOptimumCoverer.addFlag("46")
         self.edges = edges
 
         H.add_nodes_from(self.G_original)
         for edgekey in edges:
+            findOptimumCoverer.addFlag("54")  
             u, v, d = self.graphs[0].edge_index[edgekey]
             dd = {self.attr: self.trans(d[self.attr])}
 
             # Optionally, preserve the other edge attributes of the original
             # graph
             if preserve_attrs:
+                findOptimumCoverer.addFlag("56")  
                 for key, value in d.items():
+                    findOptimumCoverer.addFlag("57")  
                     if key not in [self.attr, self.candidate_attr]:
+                        findOptimumCoverer.addFlag("59")  
                         dd[key] = value
-
+                findOptimumCoverer.addFlag("58")  
             # TODO: make this preserve the key.
             H.add_edge(u, v, **dd)
-
+        findOptimumCoverer.addFlag("55")  
         return H
 
 

@@ -1,0 +1,8 @@
+-=-=-=-coverage report for: branchings.txt-=-=-=-
+total branch coverage for find_optimum: 0.0%
+
+1: 1
+total branch coverage for _init: 9.090909090909092%
+
+-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
