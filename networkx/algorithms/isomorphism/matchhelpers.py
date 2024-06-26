@@ -4,6 +4,9 @@ edge_match functions to use during isomorphism checks.
 import math
 import types
 from itertools import permutations
+from networkx.utils.branch_coverage import branch_c
+
+bc_matchHelper = branch_c("matchHelper.txt")
 
 __all__ = [
     "categorical_node_match",
@@ -20,6 +23,10 @@ __all__ = [
 
 def copyfunc(f, name=None):
     """Returns a deepcopy of a function."""
+
+    matchHelper = branch_c.branch_function(bc_matchHelper, "copyfunc", 1)
+
+    matchHelper.addFlag("branch 0")   
     return types.FunctionType(
         f.__code__, f.__globals__, name or f.__name__, f.__defaults__, f.__closure__
     )
@@ -37,6 +44,10 @@ def allclose(x, y, rtol=1.0000000000000001e-05, atol=1e-08):
 
     """
     # assume finite weights, see numpy.allclose() for reference
+    matchHelper = branch_c.branch_function(bc_matchHelper, "allclose", 1) 
+
+    matchHelper.addFlag("branch 0")   
+
     return all(math.isclose(xi, yi, rel_tol=rtol, abs_tol=atol) for xi, yi in zip(x, y))
 
 
@@ -71,17 +82,23 @@ Examples
 
 
 def categorical_node_match(attr, default):
+    matchHelper = branch_c.branch_function(bc_matchHelper, "categorical_node_match", 2)
+
+    
     if isinstance(attr, str):
+        matchHelper.addFlag("branch 0")
+        
 
         def match(data1, data2):
             return data1.get(attr, default) == data2.get(attr, default)
-
+    
     else:
+        matchHelper.addFlag("branch 1")
         attrs = list(zip(attr, default))  # Python 3
-
         def match(data1, data2):
             return all(data1.get(attr, d) == data2.get(attr, d) for attr, d in attrs)
-
+    
+    
     return match
 
 
@@ -89,7 +106,10 @@ categorical_edge_match = copyfunc(categorical_node_match, "categorical_edge_matc
 
 
 def categorical_multiedge_match(attr, default):
+    matchHelper = branch_c.branch_function(bc_matchHelper, "categorical_multiedge_match", 2)
+    
     if isinstance(attr, str):
+        matchHelper.addFlag("branch 0")   
 
         def match(datasets1, datasets2):
             values1 = {data.get(attr, default) for data in datasets1.values()}
@@ -97,6 +117,7 @@ def categorical_multiedge_match(attr, default):
             return values1 == values2
 
     else:
+        matchHelper.addFlag("branch 1")   
         attrs = list(zip(attr, default))  # Python 3
 
         def match(datasets1, datasets2):
@@ -156,8 +177,10 @@ Examples
 
 
 def numerical_node_match(attr, default, rtol=1.0000000000000001e-05, atol=1e-08):
-    if isinstance(attr, str):
+    matchHelper = branch_c.branch_function(bc_matchHelper, "numerical_node_match", 2)
 
+    if isinstance(attr, str):
+        matchHelper.addFlag("branch 0")   
         def match(data1, data2):
             return math.isclose(
                 data1.get(attr, default),
@@ -167,6 +190,7 @@ def numerical_node_match(attr, default, rtol=1.0000000000000001e-05, atol=1e-08)
             )
 
     else:
+        matchHelper.addFlag("branch 1")   
         attrs = list(zip(attr, default))  # Python 3
 
         def match(data1, data2):
@@ -181,14 +205,17 @@ numerical_edge_match = copyfunc(numerical_node_match, "numerical_edge_match")
 
 
 def numerical_multiedge_match(attr, default, rtol=1.0000000000000001e-05, atol=1e-08):
+    matchHelper = branch_c.branch_function(bc_matchHelper, "numerical_multiedge_match", 4)
+    
     if isinstance(attr, str):
-
+        matchHelper.addFlag("branch 0")   
         def match(datasets1, datasets2):
             values1 = sorted(data.get(attr, default) for data in datasets1.values())
             values2 = sorted(data.get(attr, default) for data in datasets2.values())
             return allclose(values1, values2, rtol=rtol, atol=atol)
 
     else:
+        matchHelper.addFlag("branch 1")   
         attrs = list(zip(attr, default))  # Python 3
 
         def match(datasets1, datasets2):
@@ -204,8 +231,10 @@ def numerical_multiedge_match(attr, default, rtol=1.0000000000000001e-05, atol=1
             values2.sort()
             for xi, yi in zip(values1, values2):
                 if not allclose(xi, yi, rtol=rtol, atol=atol):
+                    matchHelper.addFlag("branch 2")   
                     return False
             else:
+                matchHelper.addFlag("branch 3")   
                 return True
 
     return match
@@ -256,19 +285,24 @@ Examples
 
 
 def generic_node_match(attr, default, op):
-    if isinstance(attr, str):
+    matchHelper = branch_c.branch_function(bc_matchHelper, "generic_node_match", 4)
 
+    if isinstance(attr, str):
+        matchHelper.addFlag("branch 0")   
         def match(data1, data2):
             return op(data1.get(attr, default), data2.get(attr, default))
 
     else:
+        matchHelper.addFlag("branch 1")   
         attrs = list(zip(attr, default, op))  # Python 3
 
         def match(data1, data2):
             for attr, d, operator in attrs:
                 if not operator(data1.get(attr, d), data2.get(attr, d)):
+                    matchHelper.addFlag("branch 2")   
                     return False
             else:
+                matchHelper.addFlag("branch 3")   
                 return True
 
     return match
@@ -313,16 +347,18 @@ def generic_multiedge_match(attr, default, op):
     >>> nm = generic_node_match(["weight", "color"], [1.0, "red"], [isclose, eq])
 
     """
-
+    matchHelper = branch_c.branch_function(bc_matchHelper, "generic_multiedge_match", 5)
     # This is slow, but generic.
     # We must test every possible isomorphism between the edges.
     if isinstance(attr, str):
+        matchHelper.addFlag("branch 0")   
         attr = [attr]
         default = [default]
         op = [op]
     attrs = list(zip(attr, default))  # Python 3
 
     def match(datasets1, datasets2):
+        matchHelper.addFlag("branch 1")   
         values1 = []
         for data1 in datasets1.values():
             x = tuple(data1.get(attr, d) for attr, d in attrs)
@@ -335,12 +371,15 @@ def generic_multiedge_match(attr, default, op):
             for xi, yi in zip(values1, vals2):
                 if not all(map(lambda x, y, z: z(x, y), xi, yi, op)):
                     # This is not an isomorphism, go to next permutation.
+                    matchHelper.addFlag("branch 2")   
                     break
             else:
                 # Then we found an isomorphism.
+                matchHelper.addFlag("branch 3")   
                 return True
         else:
             # Then there are no isomorphisms between the multiedges.
+            matchHelper.addFlag("branch 4")   
             return False
 
     return match

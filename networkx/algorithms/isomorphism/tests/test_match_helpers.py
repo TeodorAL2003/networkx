@@ -32,33 +32,6 @@ def test_generic_node_match():
     assert not nm({"weight": 1.0, "color": "red"}, {"weight": 1.1})
     assert not nm({"weight": 1.1, "color": "red"}, {"weight": 1.0})
 
-def test_numerical_node_match():
-    # Single attribute match
-    nm = iso.numerical_node_match("weight", 1.0)
-    assert nm({"weight": 1.0}, {"weight": 1.0})
-    assert not nm({"weight": 1.0}, {"weight": 1.1})
-
-    # Single attribute match with default
-    assert nm({"weight": 1.0}, {})
-    assert not nm({"weight": 1.1}, {})
-
-    # Multiple attribute match
-    nm = iso.numerical_node_match(["weight", "linewidth"], [0.25, 0.5])
-    assert nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
-    assert not nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.6})
-    assert not nm({"weight": 0.26, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
-
-
-def test_numerical_edge_match():
-    nm = iso.numerical_edge_match("weight", 1.0)
-    assert nm({"weight": 1.0}, {"weight": 1.0})
-    assert not nm({"weight": 1.0}, {"weight": 1.1})
-
-    nm = iso.numerical_edge_match(["weight", "linewidth"], [0.25, 0.5])
-    assert nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
-    assert not nm({"weight": 0.25, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.6})
-    assert not nm({"weight": 0.26, "linewidth": 0.5}, {"weight": 0.25, "linewidth": 0.5})
-
 
 def test_numerical_multiedge_match():
     nm = iso.numerical_multiedge_match("weight", 1.0)

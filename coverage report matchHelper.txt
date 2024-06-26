@@ -1,0 +1,31 @@
+-=-=-=-coverage report for: matchHelper.txt-=-=-=-
+branch 0: 3
+total branch coverage for copyfunc: 100.0%
+
+branch 1: 1
+total branch coverage for categorical_node_match: 50.0%
+
+branch 0: 1
+branch 1: 1
+branch 3: 2
+branch 2: 4
+total branch coverage for generic_node_match: 100.0%
+
+branch 0: 1
+branch 1: 1
+branch 3: 1
+branch 2: 2
+total branch coverage for numerical_multiedge_match: 100.0%
+
+branch 0: 8
+total branch coverage for allclose: 100.0%
+
+branch 1: 8
+branch 2: 936
+branch 3: 6
+branch 4: 2
+branch 0: 2
+total branch coverage for generic_multiedge_match: 100.0%
+
+-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
